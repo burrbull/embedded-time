@@ -46,37 +46,81 @@ pub trait FixedPoint: Sized + Copy {
     where
         Self::T: TryFrom<SourceInt>,
     {
-        if size_of::<Self::T>() > size_of::<SourceInt>() {
-            // the dest integer is wider than the source, first promote the source integer to the
-            // dest type
-            let ticks = Self::T::try_from(ticks).map_err(|_| ConversionError::ConversionFailure)?;
-            let ticks =
-                Self::convert_ticks(ticks, scaling_factor).ok_or(ConversionError::Unspecified)?;
-            Ok(Self::new(ticks))
-        } else {
-            let ticks =
-                Self::convert_ticks(ticks, scaling_factor).ok_or(ConversionError::Unspecified)?;
-            let ticks = Self::T::try_from(ticks).map_err(|_| ConversionError::ConversionFailure)?;
-            Ok(Self::new(ticks))
-        }
-    }
-
-    #[doc(hidden)]
-    fn convert_ticks<T: TimeInt>(ticks: T, scaling_factor: Fraction) -> Option<T> {
         if (scaling_factor >= Fraction::new(1, 1) && Self::SCALING_FACTOR <= Fraction::new(1, 1))
             || (scaling_factor <= Fraction::new(1, 1)
                 && Self::SCALING_FACTOR >= Fraction::new(1, 1))
         {
-            TimeInt::checked_div_fraction(
-                &TimeInt::checked_mul_fraction(&ticks, &scaling_factor)?,
-                &Self::SCALING_FACTOR,
-            )
+            Self::from_ticks1(ticks, scaling_factor)
         } else {
-            TimeInt::checked_mul_fraction(
-                &ticks,
-                &scaling_factor.checked_div(&Self::SCALING_FACTOR)?,
-            )
+            Self::from_ticks2(ticks, scaling_factor)
         }
+    }
+
+    fn from_ticks1<SourceInt: TimeInt>(
+        ticks: SourceInt,
+        scaling_factor: Fraction,
+    ) -> Result<Self, ConversionError>
+    where
+        Self::T: TryFrom<SourceInt>,
+    {
+        Ok(Self::new(
+            if size_of::<Self::T>() > size_of::<SourceInt>() {
+                // the dest integer is wider than the source, first promote the source integer to the
+                // dest type
+                let ticks =
+                    Self::T::try_from(ticks).map_err(|_| ConversionError::ConversionFailure)?;
+                TimeInt::checked_div_fraction(
+                    &TimeInt::checked_mul_fraction(&ticks, &scaling_factor)
+                        .ok_or(ConversionError::Unspecified)?,
+                    &Self::SCALING_FACTOR,
+                )
+                .ok_or(ConversionError::Unspecified)?
+            } else {
+                Self::T::try_from(
+                    TimeInt::checked_div_fraction(
+                        &TimeInt::checked_mul_fraction(&ticks, &scaling_factor)
+                            .ok_or(ConversionError::Unspecified)?,
+                        &Self::SCALING_FACTOR,
+                    )
+                    .ok_or(ConversionError::Unspecified)?,
+                )
+                .map_err(|_| ConversionError::ConversionFailure)?
+            },
+        ))
+    }
+    fn from_ticks2<SourceInt: TimeInt>(
+        ticks: SourceInt,
+        scaling_factor: Fraction,
+    ) -> Result<Self, ConversionError>
+    where
+        Self::T: TryFrom<SourceInt>,
+    {
+        Ok(Self::new(
+            if size_of::<Self::T>() > size_of::<SourceInt>() {
+                // the dest integer is wider than the source, first promote the source integer to the
+                // dest type
+                let ticks =
+                    Self::T::try_from(ticks).map_err(|_| ConversionError::ConversionFailure)?;
+                TimeInt::checked_mul_fraction(
+                    &ticks,
+                    &scaling_factor
+                        .checked_div(&Self::SCALING_FACTOR)
+                        .ok_or(ConversionError::Unspecified)?,
+                )
+                .ok_or(ConversionError::Unspecified)?
+            } else {
+                Self::T::try_from(
+                    TimeInt::checked_mul_fraction(
+                        &ticks,
+                        &scaling_factor
+                            .checked_div(&Self::SCALING_FACTOR)
+                            .ok_or(ConversionError::Unspecified)?,
+                    )
+                    .ok_or(ConversionError::Unspecified)?,
+                )
+                .map_err(|_| ConversionError::ConversionFailure)?
+            },
+        ))
     }
 
     /// Returns the _integer_ of the fixed-point value after converting to the _scaling factor_
