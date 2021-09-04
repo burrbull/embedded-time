@@ -30,7 +30,7 @@ pub trait TimeInt:
     ///
     /// Returns truncated (rounded toward `0`) integer or [`None`] upon failure
     fn checked_div_fraction(&self, fraction: &Fraction) -> Option<Self> {
-        self.checked_mul_fraction(&fraction.recip())
+        self.checked_mul_fraction(&fraction.try_recip().ok()?)
     }
 }
 

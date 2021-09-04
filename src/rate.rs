@@ -310,7 +310,7 @@ pub trait Rate: Sized + Copy {
         let conversion_factor = Self::SCALING_FACTOR
             .checked_mul(&Duration::SCALING_FACTOR)
             .ok_or(ConversionError::Unspecified)?
-            .recip();
+            .try_recip()?;
 
         if size_of::<Self::T>() >= size_of::<Duration::T>() {
             fixed_point::FixedPoint::from_ticks(

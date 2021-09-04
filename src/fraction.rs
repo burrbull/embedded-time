@@ -144,11 +144,11 @@ impl Fraction {
     }
 
     /// Returns the reciprocal of the fraction
-    pub fn recip(self) -> Self {
+    pub const fn try_recip(self) -> Result<Self, ConversionError> {
         if self.numer == 0 {
-            panic!("division by zero")
+            return Err(ConversionError::DivByZero);
         } else {
-            Self::new(self.denom, self.numer)
+            Ok(Self::new(self.denom, self.numer))
         }
     }
 
@@ -260,7 +260,10 @@ impl ops::Div<Fraction> for u32 {
     /// Panicky u32 / `Fraction` = u32
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: Fraction) -> Self::Output {
-        (rhs.recip() * self).to_integer()
+        (rhs.try_recip()
+            .unwrap_or_else(|_| panic!("division by zero"))
+            * self)
+            .to_integer()
     }
 }
 
