@@ -32,29 +32,24 @@ impl Fraction {
         }
     }
 
-    fn _new(numer: u32, denom: u32) -> Self {
-        let mut ret = Self::new(numer, denom);
-        ret.reduce();
-        ret
-    }
-
-    fn reduce(&mut self) {
+    const fn try_reduce(mut self) -> Result<Self, ConversionError> {
         if self.denom == 0 {
-            panic!("denominator == 0");
+            return Err(ConversionError::DivByZero);
         }
         if self.numer == 0 {
             self.denom = 1;
-            return;
+            return Ok(self);
         }
         if self.numer == self.denom {
             self.numer = 1;
             self.denom = 1;
-            return;
+            return Ok(self);
         }
         let g = gcd(self.numer, self.denom);
 
         self.numer = self.numer / g;
         self.denom = self.denom / g;
+        Ok(self)
     }
 
     /// Return the numerator of the fraction
@@ -132,13 +127,8 @@ impl Fraction {
     /// # Errors
     ///
     /// [`ConversionError::DivByZero`] : A `0` denominator was detected
-    // TODO: add example
-    pub fn new_reduce(numerator: u32, denominator: u32) -> Result<Self, ConversionError> {
-        if denominator != 0 {
-            Ok(Self::_new(numerator, denominator))
-        } else {
-            Err(ConversionError::DivByZero)
-        }
+    pub const fn new_reduce(numerator: u32, denominator: u32) -> Result<Self, ConversionError> {
+        Self::new(numerator, denominator).try_reduce()
     }
 
     /// Returns the value truncated to an integer
@@ -177,13 +167,20 @@ impl Fraction {
     /// assert_eq!(Fraction::new(u32::MAX, 1).checked_mul(&Fraction::new(2,1)),
     ///     None);
     /// ```
-    pub fn checked_mul(&self, rhs: &Self) -> Option<Self> {
+    pub const fn checked_mul(&self, rhs: &Self) -> Option<Self> {
         let gcd_ad = gcd(self.numer, rhs.denom);
         let gcd_bc = gcd(self.denom, rhs.numer);
-        Some(Self::_new(
-            (self.numer / gcd_ad).checked_mul(rhs.numer / gcd_bc)?,
-            (self.denom / gcd_bc).checked_mul(rhs.denom / gcd_ad)?,
-        ))
+        let numer = (self.numer / gcd_ad).checked_mul(rhs.numer / gcd_bc);
+        let denom = (self.denom / gcd_bc).checked_mul(rhs.denom / gcd_ad);
+        if let (Some(numer), Some(denom)) = (numer, denom) {
+            if let Ok(f) = Self::new_reduce(numer, denom) {
+                Some(f)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     const fn is_zero(&self) -> bool {
@@ -213,7 +210,7 @@ impl Fraction {
     /// assert_eq!(Fraction::new(1, u32::MAX).checked_div(&Fraction::new(2,1)),
     ///     None);
     /// ```
-    pub fn checked_div(&self, rhs: &Self) -> Option<Self> {
+    pub const fn checked_div(&self, rhs: &Self) -> Option<Self> {
         if rhs.is_zero() {
             return None;
         }
@@ -224,10 +221,13 @@ impl Fraction {
         } else {
             let gcd_ac = gcd(self.numer, rhs.numer);
             let gcd_bd = gcd(self.denom, rhs.denom);
-            (
-                (self.numer / gcd_ac).checked_mul(rhs.denom / gcd_bd)?,
-                (self.denom / gcd_bd).checked_mul(rhs.numer / gcd_ac)?,
-            )
+            let numer = (self.numer / gcd_ac).checked_mul(rhs.denom / gcd_bd);
+            let denom = (self.denom / gcd_bd).checked_mul(rhs.numer / gcd_ac);
+            if let (Some(numer), Some(denom)) = (numer, denom) {
+                (numer, denom)
+            } else {
+                return None;
+            }
         };
         // Manual `reduce()`, avoiding sharp edges
         if denom == 0 {
@@ -301,10 +301,11 @@ impl ops::Mul for Fraction {
     fn mul(self, rhs: Self) -> Self::Output {
         let gcd_ad = gcd(self.numer, rhs.denom);
         let gcd_bc = gcd(self.denom, rhs.numer);
-        Self::_new(
+        Self::new_reduce(
             self.numer / gcd_ad * (rhs.numer / gcd_bc),
             self.denom / gcd_bc * (rhs.denom / gcd_ad),
         )
+        .unwrap_or_else(|_| panic!("division by zero"))
     }
 }
 
@@ -313,7 +314,8 @@ impl ops::Mul<u32> for Fraction {
     #[inline]
     fn mul(self, rhs: u32) -> Self {
         let gcd = gcd(self.denom, rhs);
-        Self::_new(self.numer * (rhs / gcd), self.denom / gcd)
+        Self::new_reduce(self.numer * (rhs / gcd), self.denom / gcd)
+            .unwrap_or_else(|_| panic!("division by zero"))
     }
 }
 
@@ -329,10 +331,11 @@ impl ops::Div for Fraction {
     fn div(self, rhs: Self) -> Self::Output {
         let gcd_ac = gcd(self.numer, rhs.numer);
         let gcd_bd = gcd(self.denom, rhs.denom);
-        Self::_new(
+        Self::new_reduce(
             self.numer / gcd_ac * (rhs.denom / gcd_bd),
             self.denom / gcd_bd * (rhs.numer / gcd_ac),
         )
+        .unwrap_or_else(|_| panic!("division by zero"))
     }
 }
 

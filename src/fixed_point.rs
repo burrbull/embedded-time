@@ -56,6 +56,7 @@ pub trait FixedPoint: Sized + Copy {
         }
     }
 
+    #[doc(hidden)]
     fn from_ticks1<SourceInt: TimeInt>(
         ticks: SourceInt,
         scaling_factor: Fraction,
@@ -88,6 +89,7 @@ pub trait FixedPoint: Sized + Copy {
             },
         ))
     }
+    #[doc(hidden)]
     fn from_ticks2<SourceInt: TimeInt>(
         ticks: SourceInt,
         scaling_factor: Fraction,
