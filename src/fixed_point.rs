@@ -3,6 +3,13 @@ use crate::{fraction::Fraction, time_int::TimeInt, ConversionError};
 use core::{convert::TryFrom, mem::size_of, prelude::v1::*};
 use num::{Bounded, CheckedDiv, CheckedMul};
 
+pub const fn compare_one(slf_factor: Fraction, scaling_factor: Fraction) -> bool {
+    (scaling_factor.const_cmp(&Fraction::one()).is_ge()
+        && slf_factor.const_cmp(&Fraction::one()).is_le())
+        || (scaling_factor.const_cmp(&Fraction::one()).is_le()
+            && slf_factor.const_cmp(&Fraction::one()).is_ge())
+}
+
 /// Fixed-point value type
 ///
 /// QX.32 where X: bit-width of `T`
@@ -46,10 +53,7 @@ pub trait FixedPoint: Sized + Copy {
     where
         Self::T: TryFrom<SourceInt>,
     {
-        if (scaling_factor >= Fraction::new(1, 1) && Self::SCALING_FACTOR <= Fraction::new(1, 1))
-            || (scaling_factor <= Fraction::new(1, 1)
-                && Self::SCALING_FACTOR >= Fraction::new(1, 1))
-        {
+        if compare_one(Self::SCALING_FACTOR, scaling_factor) {
             Self::from_ticks1(ticks, scaling_factor)
         } else {
             Self::from_ticks2(ticks, scaling_factor)
@@ -153,7 +157,7 @@ pub trait FixedPoint: Sized + Copy {
             let ticks =
                 T::try_from(self.integer()).map_err(|_| ConversionError::ConversionFailure)?;
 
-            if fraction > Fraction::new(1, 1) {
+            if fraction > Fraction::one() {
                 TimeInt::checked_div_fraction(
                     &TimeInt::checked_mul_fraction(&ticks, &Self::SCALING_FACTOR)
                         .ok_or(ConversionError::Unspecified)?,
@@ -170,7 +174,7 @@ pub trait FixedPoint: Sized + Copy {
                 .ok_or(ConversionError::Unspecified)
             }
         } else {
-            let ticks = if Self::SCALING_FACTOR > Fraction::new(1, 1) {
+            let ticks = if Self::SCALING_FACTOR > Fraction::one() {
                 TimeInt::checked_div_fraction(
                     &TimeInt::checked_mul_fraction(&self.integer(), &Self::SCALING_FACTOR)
                         .ok_or(ConversionError::Unspecified)?,

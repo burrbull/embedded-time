@@ -66,7 +66,7 @@ impl Fraction {
         (self.numer as u64) * (other.denom as u64) == (self.denom as u64) * (other.numer as u64)
     }
 
-    const fn const_cmp(&self, other: &Self) -> Ordering {
+    pub(crate) const fn const_cmp(&self, other: &Self) -> Ordering {
         let ad = (self.numer as u64) * (other.denom as u64);
         let bc = (self.denom as u64) * (other.numer as u64);
         if ad < bc {
@@ -187,11 +187,11 @@ impl Fraction {
         self.numer == 0
     }
 
-    const fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self::new(0, 1)
     }
 
-    const fn one() -> Self {
+    pub const fn one() -> Self {
         Self::new(1, 1)
     }
 

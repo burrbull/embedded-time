@@ -651,10 +651,11 @@ pub mod units {
 
                 /// See [Converting between `Rate`s](trait.Rate.html#converting-between-rates)
                 fn try_from(big: $big<T>) -> Result<Self, Self::Error> {
-                    fixed_point::FixedPoint::from_ticks(
-                        big.integer(),
-                        $big::<T>::SCALING_FACTOR,
-                    )
+                    if fixed_point::compare_one(Self::SCALING_FACTOR, $big::<T>::SCALING_FACTOR) {
+                        fixed_point::FixedPoint::from_ticks1(big.integer(), $big::<T>::SCALING_FACTOR)
+                    } else {
+                        fixed_point::FixedPoint::from_ticks2(big.integer(), $big::<T>::SCALING_FACTOR)
+                    }
                 }
             }
 
