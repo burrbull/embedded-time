@@ -24,7 +24,8 @@ bench = false
 members = ["examples"]
 
 [dependencies]
-num = { version = "0.3.0", default-features = false }
+num-integer = { version = "0.1.44", default-features = false }
+num-traits = { version = "0.2.14", default-features = false }
 serde = { version = "1.0.0", default-features = false, features = ["derive"], optional = true }
 defmt = { version = "0.2.3", optional = true }
 

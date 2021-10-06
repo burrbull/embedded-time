@@ -10,7 +10,7 @@ use crate::{
 use core::{convert::TryFrom, mem::size_of, prelude::v1::*};
 #[doc(hidden)]
 pub use fixed_point::FixedPoint as _;
-use num::{CheckedDiv, CheckedMul};
+use num_traits::{CheckedDiv, CheckedMul};
 #[doc(inline)]
 pub use units::*;
 
@@ -307,7 +307,7 @@ pub trait Rate: FixedPoint + Sized + Copy {
         let conversion_factor = Self::SCALING_FACTOR
             .checked_mul(&Duration::SCALING_FACTOR)
             .ok_or(ConversionError::Unspecified)?
-            .recip();
+            .try_recip()?;
 
         if size_of::<Self::T>() >= size_of::<Duration::T>() {
             fixed_point::FixedPoint::from_ticks(

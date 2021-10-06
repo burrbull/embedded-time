@@ -10,7 +10,7 @@ use core::{
     hash::{Hash, Hasher},
     ops,
 };
-use num::traits::{WrappingAdd, WrappingSub};
+use num_traits::{WrappingAdd, WrappingSub};
 
 /// Represents an instant of time relative to a specific [`Clock`](clock/trait.Clock.html)
 ///
@@ -178,7 +178,7 @@ impl<Clock: crate::Clock> Instant<Clock> {
         Clock::T: TryFrom<Dur::T> + core::ops::Div<Output = Clock::T>,
     {
         let add_ticks: Clock::T = duration.into_ticks(Clock::SCALING_FACTOR).ok()?;
-        if add_ticks <= (<Clock::T as num::Bounded>::max_value() / 2.into()) {
+        if add_ticks <= (<Clock::T as num_traits::Bounded>::max_value() / 2.into()) {
             Some(Self {
                 ticks: self.ticks.wrapping_add(&add_ticks),
             })
@@ -222,7 +222,7 @@ impl<Clock: crate::Clock> Instant<Clock> {
         Generic<Clock::T>: TryFrom<Generic<T>>,
     {
         let add_ticks: Clock::T = duration.into_ticks(Clock::SCALING_FACTOR).ok()?;
-        if add_ticks <= (<Clock::T as num::Bounded>::max_value() / 2.into()) {
+        if add_ticks <= (<Clock::T as num_traits::Bounded>::max_value() / 2.into()) {
             Some(Self {
                 ticks: self.ticks.wrapping_add(&add_ticks),
             })
@@ -259,7 +259,7 @@ impl<Clock: crate::Clock> Instant<Clock> {
         Clock::T: TryFrom<Dur::T> + core::ops::Div<Output = Clock::T>,
     {
         let sub_ticks: Clock::T = duration.into_ticks(Clock::SCALING_FACTOR).ok()?;
-        if sub_ticks <= (<Clock::T as num::Bounded>::max_value() / 2.into()) {
+        if sub_ticks <= (<Clock::T as num_traits::Bounded>::max_value() / 2.into()) {
             Some(Self {
                 ticks: self.ticks.wrapping_sub(&sub_ticks),
             })
@@ -299,7 +299,7 @@ impl<Clock: crate::Clock> Instant<Clock> {
         Generic<Clock::T>: TryFrom<Generic<T>>,
     {
         let sub_ticks: Clock::T = duration.into_ticks(Clock::SCALING_FACTOR).ok()?;
-        if sub_ticks <= (<Clock::T as num::Bounded>::max_value() / 2.into()) {
+        if sub_ticks <= (<Clock::T as num_traits::Bounded>::max_value() / 2.into()) {
             Some(Self {
                 ticks: self.ticks.wrapping_sub(&sub_ticks),
             })
@@ -356,7 +356,7 @@ where
     fn cmp(&self, other: &Self) -> Ordering {
         self.ticks
             .wrapping_sub(&other.ticks)
-            .cmp(&(<Clock::T as num::Bounded>::max_value() / 2.into()))
+            .cmp(&(<Clock::T as num_traits::Bounded>::max_value() / 2.into()))
             .reverse()
     }
 }

@@ -1,7 +1,7 @@
 //! Fixed-point values
 use crate::{fraction::Fraction, time_int::TimeInt, ConversionError};
 use core::{convert::TryFrom, mem::size_of, prelude::v1::*};
-use num::{Bounded, CheckedDiv, CheckedMul};
+use num_traits::{Bounded, CheckedDiv, CheckedMul};
 
 /// Fixed-point value type
 ///

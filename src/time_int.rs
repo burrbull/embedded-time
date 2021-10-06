@@ -1,13 +1,14 @@
 use crate::fraction::Fraction;
 use core::{fmt, ops};
+use num_traits as num;
 
 /// The core inner-type trait for time-related types
 pub trait TimeInt:
     Copy
-    + num::Integer
+    + num_integer::Integer
     + num::Bounded
-    + num::traits::WrappingAdd
-    + num::traits::WrappingSub
+    + num::WrappingAdd
+    + num::WrappingSub
     + num::CheckedAdd
     + num::CheckedSub
     + num::CheckedMul
@@ -30,7 +31,7 @@ pub trait TimeInt:
     ///
     /// Returns truncated (rounded toward `0`) integer or [`None`] upon failure
     fn checked_div_fraction(&self, fraction: &Fraction) -> Option<Self> {
-        self.checked_mul_fraction(&fraction.recip())
+        self.checked_mul_fraction(&fraction.try_recip().ok()?)
     }
 }
 
